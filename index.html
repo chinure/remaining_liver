@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>标准化剩余肝体积计算器</title>
+  <style>
+    :root {
+      --primary: #2b7de9;
+      --primary-light: #e6f0fd;
+      --primary-gradient: linear-gradient(135deg, #2b7de9 0%, #4a9df0 100%);
+      --success: #07c160;
+      --success-light: #e6f7ed;
+      --warning: #ff9500;
+      --warning-light: #fff5e6;
+      --danger: #fa5151;
+      --danger-light: #feecec;
+      --bg: #f7f7f7;
+      --card: #ffffff;
+      --text: #000000;
+      --text-secondary: #666666;
+      --text-tertiary: #999999;
+      --border: #e5e5e5;
+      --shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input {
+      touch-action: manipulation;
+      font-family: inherit;
+    }
+
+    /* Page container */
+    .page-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 0 90px;
+      position: relative;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    .navbar-back {
+      width: 40px;
+      font-size: 24px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .navbar-title {
+      flex: 1;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .navbar-placeholder {
+      width: 40px;
+    }
+
+    /* Mode segment */
+    .mode-segment {
+      display: flex;
+      background: rgba(0,0,0,0.05);
+      border-radius: 6px;
+      padding: 2px;
+      margin: 12px 16px;
+    }
+
+    .mode-segment button {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-segment button.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: var(--shadow);
+      font-weight: 600;
+    }
+
+    /* WeUI cells */
+    .weui-cells__title {
+      padding: 14px 16px 6px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .weui-cells {
+      background: var(--card);
+      margin: 8px 16px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .weui-cell {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 12px 16px;
+      position: relative;
+    }
+
+    .weui-cell:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 16px;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--border);
+      transform: scaleY(0.5);
+      transform-origin: 0 100%;
+    }
+
+    .weui-cell__hd {
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .cell-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--primary);
+    }
+
+    .weui-cell__bd {
+      flex: 1;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .weui-cell__ft {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .weui-cell__ft input {
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      color: var(--text);
+      text-align: right;
+      width: 90px;
+      padding: 0;
+      outline: none;
+    }
+
+    .weui-cell__ft input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .cell-unit {
+      font-size: 14px;
+      color: var(--text-secondary);
+      min-width: 28px;
+      text-align: left;
+    }
+
+    /* Action row */
+    .action-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin: 16px;
+    }
+
+    .btn-text {
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-text:active {
+      opacity: 0.6;
+    }
+
+    /* Hero card */
+    .hero-card {
+      background: var(--primary-gradient);
+      border-radius: 12px;
+      margin: 16px;
+      padding: 20px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(43, 125, 233, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .icon-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .icon-btn:active {
+      background: rgba(255,255,255,0.35);
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .hero-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      margin: 0 auto;
+    }
+
+    .progress-ring svg {
+      transform: rotate(-90deg);
+      width: 150px;
+      height: 150px;
+    }
+
+    .progress-ring-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.25);
+      stroke-width: 10;
+    }
+
+    .progress-ring-fill {
+      fill: none;
+      stroke: var(--success);
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .hero-value {
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .hero-unit {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .hero-status {
+      margin-top: 16px;
+      padding: 5px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.25);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Metric grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 0 16px;
+    }
+
+    .metric-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .metric-unit {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .metric-tag {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .metric-tag.success { background: var(--success-light); color: var(--success); }
+    .metric-tag.warning { background: var(--warning-light); color: var(--warning); }
+    .metric-tag.danger { background: var(--danger-light); color: var(--danger); }
+
+    /* Interpretation */
+    .interpretation {
+      margin: 12px 16px 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      display: none;
+    }
+
+    .interpretation.success { background: var(--success-light); border-left-color: var(--success); }
+    .interpretation.warning { background: var(--warning-light); border-left-color: var(--warning); }
+    .interpretation.danger { background: var(--danger-light); border-left-color: var(--danger); }
+
+    .interpretation-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .interpretation p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Share button */
+    .btn-share {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 12px 16px 0;
+      padding: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: calc(100% - 32px);
+    }
+
+    .btn-share:active {
+      background: var(--bg);
+    }
+
+    .btn-share svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Formula card */
+    .formula-card {
+      background: var(--card);
+      margin: 12px 16px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .formula-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .formula-header svg {
+      width: 18px;
+      height: 18px;
+      color: var(--text-tertiary);
+      transition: transform 0.2s ease;
+    }
+
+    .formula-header svg.open {
+      transform: rotate(180deg);
+    }
+
+    .formula-body {
+      padding: 0 16px 16px;
+      display: none;
+    }
+
+    .formula-body ul {
+      margin: 0;
+      padding-left: 1.2em;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .formula-body li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .formula-body strong {
+      color: var(--text);
+    }
+
+    .bmi-scale {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .bmi-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      background: var(--bg);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .bmi-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .bmi-dot.underweight { background: var(--warning); }
+    .bmi-dot.normal { background: var(--success); }
+    .bmi-dot.overweight { background: var(--warning); }
+    .bmi-dot.obese { background: #f97316; }
+    .bmi-dot.severe { background: var(--danger); }
+
+    /* Fixed bar */
+    .fixed-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .fixed-bar-inner {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .btn-calc {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-calc:active {
+      background: #1a6fd8;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 2000;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* ActionSheet */
+    .actionsheet-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1500;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .actionsheet-mask.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .actionsheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1501;
+      background: var(--bg);
+      border-radius: 12px 12px 0 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .actionsheet.show {
+      transform: translateY(0);
+    }
+
+    .actionsheet-title {
+      text-align: center;
+      padding: 14px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: var(--card);
+      border-radius: 12px 12px 0 0;
+    }
+
+    .actionsheet-item {
+      background: var(--card);
+      padding: 16px;
+      text-align: center;
+      font-size: 16px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .actionsheet-item:active {
+      background: var(--bg);
+    }
+
+    .actionsheet-cancel {
+      margin-top: 8px;
+      background: var(--card);
+      padding: 16px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .actionsheet-cancel:active {
+      background: var(--bg);
+    }
+
+    /* Share metrics inside hero card */
+    .share-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .share-metric {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .share-metric-label {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .share-metric-value {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .share-metric-unit {
+      font-size: 10px;
+      opacity: 0.75;
+    }
+
+    @media (max-width: 360px) {
+      .share-metric-value { font-size: 13px; }
+      .share-metric-label { font-size: 10px; }
+    }
+
+    /* Utility */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Print */
+    @media print {
+      .navbar, .fixed-bar, .action-row, .btn-share, .actionsheet, .actionsheet-mask, .toast, .mode-segment { display: none !important; }
+      body { background: white; }
+      .page-container { max-width: none; padding-bottom: 0; }
+      .hero-card { background: white !important; border: 1px solid var(--border); color: black !important; box-shadow: none; }
+      .hero-card * { color: black !important; }
+      .progress-ring-fill { stroke: #666 !important; }
+      .progress-ring-bg { stroke: #ddd !important; }
+      .weui-cells, .metric-item, .formula-card, .interpretation { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-back">&#8249;</div>
+    <div class="navbar-title">标准化剩余肝体积计算器</div>
+    <div class="navbar-placeholder"></div>
+  </nav>
+
+  <div class="page-container">
+    <div class="mode-segment">
+      <button type="button" id="mode-known" class="active" onclick="setMode('known')">已知剩余肝体积</button>
+      <button type="button" id="mode-resected" onclick="setMode('resected')">已知切除肝体积</button>
+    </div>
+
+    <section class="weui-cells">
+      <div class="weui-cells__title">患者基本信息</div>
+      <div class="weui-cell">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a5 5 0 0 1 5 5v2H7V7a5 5 0 0 1 5-5z"></path>
+            <path d="M5 13v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path>
+            <path d="M9 10h6"></path>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">体重</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="bw" step="0.1" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">kg</span>
+        </div>
+      </div>
+      <div class="weui-cell">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 20h10"></path>
+            <path d="M12 4v16"></path>
+            <path d="M8 8l4-4 4 4"></path>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">身高</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="bh" step="0.1" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">cm</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="weui-cells">
+      <div class="weui-cells__title">CT 测量体积</div>
+      <div class="weui-cell">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c4.97 0 9-4.03 9-9V7c0-1.1-.9-2-2-2h-1V2h-2v3h-2V2h-2v3H9V2H7v3H6c-1.1 0-2 .9-2 2v6c0 4.97 4.03 9 9 9z"></path>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">全肝体积</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="tlv" step="0.01" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">mL</span>
+        </div>
+      </div>
+      <div class="weui-cell">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">肿瘤体积</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="ttv" step="0.01" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">mL</span>
+        </div>
+      </div>
+      <div class="weui-cell" id="flv-field">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c4.97 0 9-4.03 9-9V7c0-1.1-.9-2-2-2h-1V2h-2v3h-2V2h-2v3H9V2H7v3H6c-1.1 0-2 .9-2 2v6c0 4.97 4.03 9 9 9z"></path>
+            <path d="M12 7v8"></path>
+            <path d="M9 10h6"></path>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">剩余肝体积</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="flv" step="0.01" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">mL</span>
+        </div>
+      </div>
+      <div class="weui-cell hidden" id="resected-field">
+        <div class="weui-cell__hd">
+          <svg class="cell-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+        </div>
+        <div class="weui-cell__bd">切除肝体积</div>
+        <div class="weui-cell__ft">
+          <input type="number" id="resected" step="0.01" placeholder="请输入" oninput="calculate()">
+          <span class="cell-unit">mL</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="action-row">
+      <button class="btn-text" onclick="loadSample()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+        填入示例
+      </button>
+      <button class="btn-text" onclick="resetForm()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        重置
+      </button>
+    </div>
+
+    <section class="hero-card" id="hero-card">
+      <div class="hero-header">
+        <span>标准化全肝体积比 SLVR</span>
+        <button class="icon-btn" onclick="copyResult()" aria-label="复制结果">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="hero-body">
+        <div class="progress-ring">
+          <svg width="150" height="150">
+            <circle class="progress-ring-bg" cx="75" cy="75" r="65"></circle>
+            <circle class="progress-ring-fill" id="progress-ring-fill" cx="75" cy="75" r="65"></circle>
+          </svg>
+          <div class="progress-text">
+            <div class="hero-value" id="res-slvr">—</div>
+            <div class="hero-unit">%</div>
+          </div>
+        </div>
+        <div class="hero-status" id="tag-slvr">—</div>
+      </div>
+
+      <div class="share-metrics" id="share-metrics">
+        <div class="share-metric">
+          <span class="share-metric-label">BSA</span>
+          <span class="share-metric-value" id="share-bsa">—</span>
+          <span class="share-metric-unit">m²</span>
+        </div>
+        <div class="share-metric">
+          <span class="share-metric-label">BMI</span>
+          <span class="share-metric-value" id="share-bmi">—</span>
+          <span class="share-metric-unit">kg/m²</span>
+        </div>
+        <div class="share-metric">
+          <span class="share-metric-label">SLV</span>
+          <span class="share-metric-value" id="share-slv">—</span>
+          <span class="share-metric-unit">mL</span>
+        </div>
+        <div class="share-metric">
+          <span class="share-metric-label">FLV</span>
+          <span class="share-metric-value" id="share-flv">—</span>
+          <span class="share-metric-unit">%</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="metric-grid">
+      <div class="metric-item" id="card-bsa">
+        <div class="metric-label">体表面积 BSA</div>
+        <div class="metric-value" id="res-bsa">—</div>
+        <div class="metric-unit">m²</div>
+      </div>
+      <div class="metric-item" id="card-bmi">
+        <div class="metric-label">BMI</div>
+        <div class="metric-value" id="res-bmi">—</div>
+        <div class="metric-unit">kg/m²</div>
+        <div class="metric-tag info" id="tag-bmi">—</div>
+      </div>
+      <div class="metric-item" id="card-slv">
+        <div class="metric-label">标准全肝体积 SLV</div>
+        <div class="metric-value" id="res-slv">—</div>
+        <div class="metric-unit">mL</div>
+      </div>
+      <div class="metric-item" id="card-flv-ratio">
+        <div class="metric-label">FLV 比例</div>
+        <div class="metric-value" id="res-flv-ratio">—</div>
+        <div class="metric-unit">%</div>
+      </div>
+    </div>
+
+    <div class="interpretation" id="interpretation">
+      <div class="interpretation-title">结果解读</div>
+      <p id="interpretation-text"></p>
+    </div>
+
+    <button class="btn-share" onclick="openActionSheet()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      分享结果
+    </button>
+
+    <section class="formula-card">
+      <div class="formula-header" onclick="toggleFormula()">
+        <span>计算公式</span>
+        <svg id="formula-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="formula-body" id="formula-body">
+        <ul>
+          <li><strong>BMI</strong> = 体重(kg) ÷ [身高(m)]²</li>
+          <li><strong>BSA</strong>（Du Bois） = 0.007184 × 体重<sup>0.425</sup> × 身高<sup>0.725</sup></li>
+          <li><strong>SLV</strong>（Urata） = 706.2 × BSA + 2.4（mL）</li>
+          <li><strong>FLV</strong> = CT 剩余肝体积 ÷ (CT 全肝体积 − CT 肿瘤体积)</li>
+          <li><strong>SLVR</strong> = CT 剩余肝体积 ÷ SLV</li>
+        </ul>
+        <div class="bmi-scale">
+          <div class="bmi-item"><span class="bmi-dot underweight"></span>过轻：BMI &lt; 18.5</div>
+          <div class="bmi-item"><span class="bmi-dot normal"></span>正常：18.5 ≤ BMI &lt; 25</div>
+          <div class="bmi-item"><span class="bmi-dot overweight"></span>过重：25 ≤ BMI &lt; 28</div>
+          <div class="bmi-item"><span class="bmi-dot obese"></span>肥胖：28 ≤ BMI &lt; 32</div>
+          <div class="bmi-item"><span class="bmi-dot severe"></span>非常肥胖：BMI ≥ 32</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="fixed-bar">
+    <div class="fixed-bar-inner">
+      <button class="btn-calc" onclick="calculate()">计算</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="actionsheet-mask" id="actionsheet-mask" onclick="closeActionSheet()"></div>
+  <div class="actionsheet" id="actionsheet">
+    <div class="actionsheet-title">分享结果</div>
+    <div class="actionsheet-item" onclick="copyResult(); closeActionSheet();">复制结果</div>
+    <div class="actionsheet-item" onclick="saveAsImage(); closeActionSheet();">保存为图片</div>
+    <div class="actionsheet-cancel" onclick="closeActionSheet()">取消</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    let mode = 'known';
+    let currentSample = 0;
+
+    const samples = [
+      { mode: 'known', bw: 59.4, bh: 150, tlv: 979.1, ttv: 58.2, flv: 917.97 },
+      { mode: 'resected', bw: 90, bh: 174, tlv: 2021, ttv: 451, resected: 830 }
+    ];
+
+    function setMode(newMode) {
+      mode = newMode;
+      document.getElementById('mode-known').classList.toggle('active', mode === 'known');
+      document.getElementById('mode-resected').classList.toggle('active', mode === 'resected');
+
+      const flvField = document.getElementById('flv-field');
+      const resectedField = document.getElementById('resected-field');
+
+      if (mode === 'known') {
+        resectedField.classList.add('hidden');
+        flvField.classList.remove('hidden');
+      } else {
+        flvField.classList.add('hidden');
+        resectedField.classList.remove('hidden');
+      }
+      calculate();
+    }
+
+    function getValue(id) {
+      const v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? null : v;
+    }
+
+    function fmt(num, digits = 2) {
+      if (num === null || num === undefined || !isFinite(num)) return '—';
+      return num.toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: digits });
+    }
+
+    function fmtPct(num) {
+      if (num === null || num === undefined || !isFinite(num)) return '—';
+      return (num * 100).toLocaleString('zh-CN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    }
+
+    function animateValue(element, target, formatter, duration = 400) {
+      if (target === null || !isFinite(target)) {
+        element.textContent = '—';
+        return;
+      }
+      const startTime = performance.now();
+      const start = 0;
+
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = start + (target - start) * ease;
+        element.textContent = formatter(current);
+        if (progress < 1) requestAnimationFrame(update);
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    function setProgress(percentage, color) {
+      const circle = document.getElementById('progress-ring-fill');
+      const radius = 65;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (percentage / 100) * circumference;
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+      circle.style.strokeDashoffset = offset;
+      if (color) circle.style.stroke = color;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function copyResult() {
+      const slvrText = document.getElementById('res-slvr').textContent;
+      const tagText = document.getElementById('tag-slvr').textContent;
+      if (slvrText === '—') {
+        showToast('请先计算结果');
+        return;
+      }
+      const text = `SLVR: ${slvrText}% (${tagText}) - 标准化剩余肝体积计算器`;
+
+      let copied = false;
+
+      // Try modern Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } catch (err) {
+          copied = false;
+        }
+      }
+
+      // Fallback: execCommand on a temporary textarea
+      if (!copied) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+          copied = document.execCommand('copy');
+        } catch (err) {
+          copied = false;
+        }
+        document.body.removeChild(textarea);
+      }
+
+      showToast(copied ? '已复制结果' : '复制失败，请手动复制');
+    }
+
+    async function saveAsImage() {
+      const slvrText = document.getElementById('res-slvr').textContent;
+      if (slvrText === '—') {
+        showToast('请先计算结果');
+        return;
+      }
+
+      if (typeof html2canvas === 'undefined') {
+        showToast('图片生成工具加载中，请稍后重试');
+        return;
+      }
+
+      const resultSection = document.querySelector('.hero-card');
+      if (!resultSection) return;
+
+      // Temporarily hide UI-only elements within the captured area
+      const heroHeader = resultSection.querySelector('.hero-header');
+      const originalHeaderDisplay = heroHeader ? heroHeader.style.display : '';
+      if (heroHeader) heroHeader.style.display = 'none';
+
+      try {
+        const canvas = await html2canvas(resultSection, {
+          backgroundColor: '#2b7de9',
+          scale: 3,
+          useCORS: true,
+          logging: false
+        });
+
+        const dataUrl = canvas.toDataURL('image/png');
+
+        // Try downloading (works on desktop and some mobile browsers)
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `SLVR_${slvrText.replace(/\./g, '_')}pct.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast('图片已生成');
+      } catch (err) {
+        showToast('图片生成失败');
+        console.error(err);
+      } finally {
+        if (heroHeader) heroHeader.style.display = originalHeaderDisplay;
+      }
+    }
+
+    function openActionSheet() {
+      document.getElementById('actionsheet-mask').classList.add('show');
+      document.getElementById('actionsheet').classList.add('show');
+    }
+
+    function closeActionSheet() {
+      document.getElementById('actionsheet-mask').classList.remove('show');
+      document.getElementById('actionsheet').classList.remove('show');
+    }
+
+    function toggleFormula() {
+      const body = document.getElementById('formula-body');
+      const arrow = document.getElementById('formula-arrow');
+      const isOpen = body.style.display === 'block';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.classList.toggle('open', !isOpen);
+    }
+
+    function calculate() {
+      const bw = getValue('bw');
+      const bh = getValue('bh');
+      const tlv = getValue('tlv');
+      const ttv = getValue('ttv');
+      const flvInput = getValue('flv');
+      const resected = getValue('resected');
+
+      const elements = {
+        bsa: document.getElementById('res-bsa'),
+        bmi: document.getElementById('res-bmi'),
+        slv: document.getElementById('res-slv'),
+        flvRatio: document.getElementById('res-flv-ratio'),
+        slvr: document.getElementById('res-slvr')
+      };
+
+      const tagBmi = document.getElementById('tag-bmi');
+      const tagSlvr = document.getElementById('tag-slvr');
+      const interp = document.getElementById('interpretation');
+      const interpText = document.getElementById('interpretation-text');
+
+      // Reset
+      Object.values(elements).forEach(el => el.textContent = '—');
+      tagBmi.textContent = '—';
+      tagBmi.className = 'metric-tag info';
+      tagSlvr.textContent = '—';
+      setProgress(0, '#07c160');
+      interp.style.display = 'none';
+      interp.className = 'interpretation';
+
+      // Reset share metrics
+      document.getElementById('share-bsa').textContent = '—';
+      document.getElementById('share-bmi').textContent = '—';
+      document.getElementById('share-slv').textContent = '—';
+      document.getElementById('share-flv').textContent = '—';
+
+      if (!bw || !bh) return;
+
+      const bmi = bw / Math.pow(bh / 100, 2);
+      const bsa = 0.007184 * Math.pow(bw, 0.425) * Math.pow(bh, 0.725);
+      const slv = 706.2 * bsa + 2.4;
+
+      animateValue(elements.bsa, bsa, (n) => fmt(n, 4));
+      animateValue(elements.bmi, bmi, (n) => fmt(n, 2));
+      animateValue(elements.slv, slv, (n) => fmt(n, 2));
+
+      // Update share metrics
+      document.getElementById('share-bsa').textContent = fmt(bsa, 4);
+      document.getElementById('share-bmi').textContent = fmt(bmi, 2);
+      document.getElementById('share-slv').textContent = fmt(slv, 2);
+
+      // BMI tag
+      let bmiText, bmiClass;
+      if (bmi < 18.5) { bmiText = '过轻'; bmiClass = 'warning'; }
+      else if (bmi < 25) { bmiText = '正常'; bmiClass = 'success'; }
+      else if (bmi < 28) { bmiText = '过重'; bmiClass = 'warning'; }
+      else if (bmi < 32) { bmiText = '肥胖'; bmiClass = 'danger'; }
+      else { bmiText = '非常肥胖'; bmiClass = 'danger'; }
+      tagBmi.textContent = bmiText;
+      tagBmi.className = `metric-tag ${bmiClass}`;
+
+      if (!tlv || ttv === null) return;
+
+      const tumorFree = tlv - ttv;
+      if (tumorFree <= 0) return;
+
+      let flv = null;
+      if (mode === 'known' && flvInput !== null) {
+        flv = flvInput;
+      } else if (mode === 'resected' && resected !== null) {
+        flv = tlv - resected;
+      }
+
+      if (flv === null || flv <= 0) return;
+
+      const flvRatio = flv / tumorFree;
+      const slvr = flv / slv;
+      const slvrPct = slvr * 100;
+
+      animateValue(elements.flvRatio, flvRatio, (n) => fmtPct(n));
+      animateValue(elements.slvr, slvrPct, (n) => fmt(n, 2));
+
+      // Update share FLV
+      document.getElementById('share-flv').textContent = fmtPct(flvRatio);
+
+      // SLVR status
+      let slvrText, slvrClass, interpClass, progressColor;
+      if (slvr >= 0.4) {
+        slvrText = '充足';
+        slvrClass = 'success';
+        interpClass = 'success';
+        progressColor = 'var(--success)';
+      } else if (slvr >= 0.3) {
+        slvrText = '临界';
+        slvrClass = 'warning';
+        interpClass = 'warning';
+        progressColor = 'var(--warning)';
+      } else {
+        slvrText = '不足';
+        slvrClass = 'danger';
+        interpClass = 'danger';
+        progressColor = 'var(--danger)';
+      }
+      tagSlvr.textContent = slvrText;
+      setProgress(Math.min(slvrPct, 100), progressColor);
+
+      // Interpretation
+      let text = '';
+      if (slvr >= 0.4) {
+        text = `SLVR 为 ${fmtPct(slvr)}%，剩余肝体积相对充足，通常可耐受大范围肝切除。`;
+      } else if (slvr >= 0.3) {
+        text = `SLVR 为 ${fmtPct(slvr)}%，处于临界范围，需结合肝功能、门静脉高压及术中残余肝血流综合评估。`;
+      } else {
+        text = `SLVR 为 ${fmtPct(slvr)}%，剩余肝体积不足，术后肝衰竭风险较高，建议谨慎决策或采取促进肝再生措施。`;
+      }
+      interpText.textContent = text;
+      interp.className = `interpretation ${interpClass}`;
+      interp.style.display = 'block';
+    }
+
+    function loadSample() {
+      currentSample = (currentSample + 1) % samples.length;
+      const s = samples[currentSample];
+
+      if (s.mode !== mode) {
+        setMode(s.mode);
+      }
+
+      document.getElementById('bw').value = s.bw;
+      document.getElementById('bh').value = s.bh;
+      document.getElementById('tlv').value = s.tlv;
+      document.getElementById('ttv').value = s.ttv;
+      document.getElementById('flv').value = s.flv !== undefined ? s.flv : '';
+      document.getElementById('resected').value = s.resected !== undefined ? s.resected : '';
+
+      calculate();
+      showToast('已填入示例');
+    }
+
+    function resetForm() {
+      ['bw', 'bh', 'tlv', 'ttv', 'flv', 'resected'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      calculate();
+      showToast('已重置');
+    }
+
+    // Initial render
+    calculate();
+  </script>
+</body>
+</html>
