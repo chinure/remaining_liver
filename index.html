@@ -966,6 +966,7 @@
   <script>
     let mode = 'known';
     let currentSample = 0;
+    let calculationVersion = 0;
 
     const samples = [
       { mode: 'known', bw: 59.4, bh: 150, tlv: 979.1, ttv: 58.2, flv: 917.97 },
@@ -991,8 +992,10 @@
     }
 
     function getValue(id) {
-      const v = parseFloat(document.getElementById(id).value);
-      return isNaN(v) ? null : v;
+      const raw = document.getElementById(id).value.trim();
+      if (raw === '') return null;
+      const v = Number(raw);
+      return Number.isFinite(v) ? v : null;
     }
 
     function fmt(num, digits = 2) {
@@ -1012,8 +1015,10 @@
       }
       const startTime = performance.now();
       const start = 0;
+      const version = calculationVersion;
 
       function update(currentTime) {
+        if (version !== calculationVersion) return;
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         const ease = 1 - Math.pow(1 - progress, 3);
@@ -1150,6 +1155,7 @@
     }
 
     function calculate() {
+      calculationVersion += 1;
       const bw = getValue('bw');
       const bh = getValue('bh');
       const tlv = getValue('tlv');
@@ -1185,7 +1191,7 @@
       document.getElementById('share-slv').textContent = '—';
       document.getElementById('share-flv').textContent = '—';
 
-      if (!bw || !bh) return;
+      if (bw === null || bh === null || bw <= 0 || bh <= 0) return;
 
       const bmi = bw / Math.pow(bh / 100, 2);
       const bsa = 0.007184 * Math.pow(bw, 0.425) * Math.pow(bh, 0.725);
@@ -1210,7 +1216,7 @@
       tagBmi.textContent = bmiText;
       tagBmi.className = `metric-tag ${bmiClass}`;
 
-      if (!tlv || ttv === null) return;
+      if (tlv === null || ttv === null || tlv <= 0 || ttv < 0) return;
 
       const tumorFree = tlv - ttv;
       if (tumorFree <= 0) return;
@@ -1219,10 +1225,11 @@
       if (mode === 'known' && flvInput !== null) {
         flv = flvInput;
       } else if (mode === 'resected' && resected !== null) {
+        if (resected < 0 || resected >= tlv) return;
         flv = tlv - resected;
       }
 
-      if (flv === null || flv <= 0) return;
+      if (flv === null || flv <= 0 || flv > tumorFree) return;
 
       const flvRatio = flv / tumorFree;
       const slvr = flv / slv;
